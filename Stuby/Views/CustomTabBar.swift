@@ -4,6 +4,7 @@ struct CustomTabBar: View {
     @Binding var selectedTab: Int
     @EnvironmentObject var theme: ThemeManager
     @State private var tabOffset: CGFloat = 0
+    @State private var isTabBarPressed = false
 
     let tabs = [
         TabItem(icon: "house.fill", title: "Dashboard", tag: 0),
@@ -14,14 +15,43 @@ struct CustomTabBar: View {
 
     var body: some View {
         ZStack {
-            // Tab bar background with semicircular cutout
+            // Tab bar background with semicircular cutout and 3D volume effect
             CustomTabBarBackground()
-                .fill(theme.cardBackgroundColor.opacity(0.95))
-                .overlay(
-                    CustomTabBarBackground()
-                        .stroke(theme.borderColor.opacity(0.5), lineWidth: 1)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            theme.cardBackgroundColor,
+                            theme.cardBackgroundColor.opacity(0.8)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
-                .shadow(color: theme.shadowColor, radius: 15, x: 0, y: 5)
+                .overlay(
+                    // Inner highlight for 3D effect
+                    CustomTabBarBackground()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    theme.isDarkMode ? Color.white.opacity(0.1) : Color.white.opacity(0.8),
+                                    theme.isDarkMode ? Color.white.opacity(0.05) : Color.white.opacity(0.3)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 1
+                        )
+                        .offset(y: -1)
+                )
+                .overlay(
+                    // Border
+                    CustomTabBarBackground()
+                        .stroke(theme.borderColor.opacity(0.3), lineWidth: 1)
+                )
+                .shadow(color: theme.shadowColor.opacity(0.3), radius: 8, x: 0, y: -2) // Top shadow for depth
+                .shadow(color: theme.shadowColor, radius: isTabBarPressed ? 10 : 20, x: 0, y: isTabBarPressed ? 4 : 8) // Main shadow with animation
+                .scaleEffect(isTabBarPressed ? 0.98 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isTabBarPressed)
 
             HStack(spacing: 0) {
                 // All four tabs evenly distributed
@@ -29,7 +59,10 @@ struct CustomTabBar: View {
                     TabButton(
                         tab: tab,
                         selectedTab: $selectedTab,
-                        theme: theme
+                        theme: theme,
+                        onPress: { pressed in
+                            isTabBarPressed = pressed
+                        }
                     )
                     .offset(y: 4) // Move regular tabs down slightly
                 }
@@ -46,6 +79,7 @@ struct TabButton: View {
     let tab: TabItem
     @Binding var selectedTab: Int
     let theme: ThemeManager
+    let onPress: (Bool) -> Void
     @State private var isPressed = false
 
     var isSelected: Bool {
@@ -93,6 +127,7 @@ struct TabButton: View {
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
                 isPressed = pressing
+                onPress(pressing) // Trigger tab bar animation
             }
         }, perform: {})
     }
@@ -135,14 +170,18 @@ struct CenterAddButton: View {
                 ZStack {
                     // Background circle - matches other buttons
                     Circle()
-                        .fill(isPressed ? Color.primaryPurple : Color.white)
-                        .frame(width: 50, height: 50)
-                        .shadow(color: theme.shadowColor, radius: 15, x: 0, y: 5)
+                        .fill(isPressed ? Color.primaryPurple : theme.cardBackgroundColor)
+                        .overlay(
+                            Circle()
+                                .stroke(theme.borderColor, lineWidth: 1)
+                        )
+                        .frame(width: 75, height: 75)
+                        .shadow(color: theme.shadowColor, radius: 22, x: 0, y: 5)
                         .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isPressed)
 
                     Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(isPressed ? .white : .gray)
+                        .font(.system(size: 27, weight: .semibold))
+                        .foregroundColor(isPressed ? .white : theme.textPrimaryColor)
                 }
             }
             .buttonStyle(PlainButtonStyle())
@@ -174,7 +213,7 @@ struct CustomTabBarBackground: Shape {
         var path = Path()
 
         let cornerRadius: CGFloat = 20
-        let cutoutRadius: CGFloat = 30
+        let cutoutRadius: CGFloat = 40
         let cutoutCenter = CGPoint(x: rect.midX, y: rect.minY)
 
         // Start from top-left corner
@@ -191,19 +230,17 @@ struct CustomTabBarBackground: Shape {
 
         // Top edge to cutout start
         let cutoutStartX = cutoutCenter.x - cutoutRadius
+        let cutoutEndX = cutoutCenter.x + cutoutRadius
         path.addLine(to: CGPoint(x: cutoutStartX, y: rect.minY))
 
-        // Simple semicircular cutout
-        path.addArc(
-            center: cutoutCenter,
-            radius: cutoutRadius,
-            startAngle: .degrees(180),
-            endAngle: .degrees(0),
-            clockwise: true
-        )
+        // Shallow arc cutout (less deep than semicircle)
+        let cutoutDepth: CGFloat = 30 // Doubled depth from 15 to 30 pixels
+
+        // Create shallow arc using quadratic curve
+        let controlPoint = CGPoint(x: cutoutCenter.x, y: cutoutCenter.y + cutoutDepth)
+        path.addQuadCurve(to: CGPoint(x: cutoutEndX, y: rect.minY), control: controlPoint)
 
         // Top edge from cutout end
-        let cutoutEndX = cutoutCenter.x + cutoutRadius
         path.addLine(to: CGPoint(x: rect.maxX - cornerRadius, y: rect.minY))
 
         // Top-right corner

@@ -63,7 +63,7 @@ struct ContentView: View {
                 CenterAddButton {
                     showingAddSubscription = true
                 }
-                .offset(y: -47.5) // Position so bottom half overlaps tab bar
+                .offset(y: -60) // Position so bottom half overlaps tab bar
             }
             .zIndex(2) // Highest priority
         }
