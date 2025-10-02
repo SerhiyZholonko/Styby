@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
+    var onTabChange: ((Int) -> Void)?
     @EnvironmentObject var theme: ThemeManager
     @State private var tabOffset: CGFloat = 0
     @State private var isTabBarPressed = false
@@ -62,7 +63,8 @@ struct CustomTabBar: View {
                         theme: theme,
                         onPress: { pressed in
                             isTabBarPressed = pressed
-                        }
+                        },
+                        onTabChange: onTabChange
                     )
                     .offset(y: 4) // Move regular tabs down slightly
                 }
@@ -80,6 +82,7 @@ struct TabButton: View {
     @Binding var selectedTab: Int
     let theme: ThemeManager
     let onPress: (Bool) -> Void
+    var onTabChange: ((Int) -> Void)?
     @State private var isPressed = false
 
     var isSelected: Bool {
@@ -88,7 +91,10 @@ struct TabButton: View {
 
     var body: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            // Use callback if available, otherwise use binding
+            if let onTabChange = onTabChange {
+                onTabChange(tab.tag)
+            } else {
                 selectedTab = tab.tag
             }
 

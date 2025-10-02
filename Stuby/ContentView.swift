@@ -11,40 +11,29 @@ struct ContentView: View {
     @StateObject private var subscriptionManager = SubscriptionManager()
     @EnvironmentObject var theme: ThemeManager
     @State private var selectedTab = 0
+    @State private var previousTab = 0
     @State private var showingAddSubscription = false
 
     var body: some View {
         ZStack {
             // Main content area - extends to full screen
             ZStack {
-                switch selectedTab {
-                case 0:
-                    DashboardView(subscriptionManager: subscriptionManager)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                case 1:
-                    SubscriptionListView(subscriptionManager: subscriptionManager)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                case 2:
-                    AnalyticsView(subscriptionManager: subscriptionManager)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                case 3:
-                    SettingsView()
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                default:
-                    DashboardView(subscriptionManager: subscriptionManager)
+                Group {
+                    switch selectedTab {
+                    case 0:
+                        DashboardView(subscriptionManager: subscriptionManager)
+                    case 1:
+                        SubscriptionListView(subscriptionManager: subscriptionManager)
+                    case 2:
+                        AnalyticsView(subscriptionManager: subscriptionManager)
+                    case 3:
+                        SettingsView()
+                    default:
+                        DashboardView(subscriptionManager: subscriptionManager)
+                    }
                 }
+                .transition(currentTransition)
+                .id(selectedTab)
             }
             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: selectedTab)
             .ignoresSafeArea(.all) // Extend to full screen
@@ -52,7 +41,7 @@ struct ContentView: View {
             // Custom Tab Bar overlay
             VStack {
                 Spacer()
-                CustomTabBar(selectedTab: $selectedTab)
+                CustomTabBar(selectedTab: $selectedTab, onTabChange: handleTabChange)
                     .frame(height: 70)
             }
             .zIndex(1)
@@ -70,6 +59,20 @@ struct ContentView: View {
         .fullScreenCover(isPresented: $showingAddSubscription) {
             AddEditSubscriptionView(subscriptionManager: subscriptionManager)
         }
+    }
+
+    private var currentTransition: AnyTransition {
+        let isMovingRight = selectedTab > previousTab
+
+        return .asymmetric(
+            insertion: .move(edge: isMovingRight ? .trailing : .leading).combined(with: .opacity),
+            removal: .move(edge: isMovingRight ? .leading : .trailing).combined(with: .opacity)
+        )
+    }
+
+    private func handleTabChange(newTab: Int) {
+        previousTab = selectedTab
+        selectedTab = newTab
     }
 }
 

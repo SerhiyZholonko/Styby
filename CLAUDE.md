@@ -72,6 +72,9 @@ Stuby is a subscription management app that helps users track recurring subscrip
 - `SettingsView.swift`: App settings and preferences
 - `AddEditSubscriptionView.swift`: Form for creating/editing subscriptions
 - `SubscriptionDetailView.swift`: Detailed view of individual subscriptions
+- `NotificationCalendarView.swift`: Calendar view with payment date visualization
+- `CustomTabBar.swift`: Custom tab bar with center floating action button
+- `AnimatedComponents.swift`: Reusable animated UI components
 
 ### Key Configuration
 - **Bundle Identifier**: `serhiiZholonko.com.Stuby`
